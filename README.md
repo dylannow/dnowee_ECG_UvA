@@ -22,37 +22,38 @@ The project focused on:
 ---
 
 ## Repository Structure
-├── bachelor_thesis_dnowee.pdf # Final bachelor thesis document (uploaded soon...) <br />
-├── README.md # Project documentation <br />
-├── requirements.txt # Python dependencies <br />
-├── data/ # data from https://zenodo.org/records/4916206 <br />
-│ ├── chagas_class_balance.png # the balance of CODE-15 data visualised <br />
-│ ├── data_before_balancing.png # the balance of CODE-15 data visualised <br />
-├── code/ <br />
-│ ├── models/ <br />
-│ │ ├── 2d_cnn v1 (efficientnet based)/ <br />
-| | | <tab>└── team_code.py # code for creating, training and running 2d cnn v1 <br />
-│ │ └── 2d_cnn v2 (efficientnet l-based)/ <br />
-| | | <tab>└── team_code.py # code for creating, training and running 2d cnn v2 <br />
-│ ├── prepare_code15_data.py # Custom PyTorch dataset for CODE-15 ECGs <br />
-│ ├── preprocess_code15_wavelets.py # Morlet wavelet transform & filtering pipeline <br />
-| ├── train_model.py # functions for training the model for challenge <br />
-| ├── run_model.py # functions for running the model for challenge <br />
-| ├── evaluate_model_more_metrics.py # functions for evaluating the model <br />
-| └── make_npy_array_calibration_preds.py # script for creating temporary GOTOs in working with limited space on snellius server <br />
-| ├── calibrate_model.py # functions for calibrating the model <br />
-| ├── helper_code.py # various helper functions defined for the challenge <br />
-├── results/ <br />
-│ ├── pr_curve_v1.png <br />
-│ ├── pr_curve_v2.png <br />
-│ ├── roc_curve_v1.png <br />
-│ ├── roc_curve_v2.png <br />
-│ └── pytorch dataset visualisation/ <br />
-│ ├── sample1_ecg_hp_0.5_filter.png # an ecg sample with high pass filter <br />
-│ └── sample1_preprocessed_cwt.png # an ecg sample preprocessed to the time-frequency domain using a continuous wavelet transform <br />
-└── slurm/ <br />
-<tab> ├── preprocessing_morlet_hp_znorm_4096.job # Batch job for preprocessing on Snellius <br />
-<tab> └── train_model_balanced.job # Batch job for model training to be altered manually <br />
+- bachelor_thesis_dnowee.pdf # Final bachelor thesis document (uploaded soon...)
+- README.md # Project documentation
+- requirements.txt # Python dependencies 
+- data/ # data from https://zenodo.org/records/4916206 
+    - chagas_class_balance.png # the balance of CODE-15 data visualised 
+    - data_before_balancing.png # the balance of CODE-15 data visualised 
+- code/ 
+    - models/ 
+        - 2d_cnn v1 (efficientnet based)/ 
+            - team_code.py # code for creating, training and running 2d cnn v1 
+        - 2d_cnn v2 (efficientnet l-based)/ 
+            - team_code.py # code for creating, training and running 2d cnn v2 
+    - prepare_code15_data.py # Custom PyTorch dataset for CODE-15 ECGs 
+    - preprocess_code15_wavelets.py # Morlet wavelet transform & filtering pipeline 
+    - train_model.py # functions for training the model for challenge 
+    - run_model.py # functions for running the model for challenge 
+    - evaluate_model_more_metrics.py # functions for evaluating the model
+    - make_npy_array_calibration_preds.py # script for creating temporary GOTOs in working with limited space on snellius server 
+    - calibrate_model.py # functions for calibrating the model 
+    - helper_code.py # various helper functions defined for the challenge 
+- results/ 
+    - pr_curve_v1.png 
+    - pr_curve_v2.png 
+    - roc_curve_v1.png 
+    - roc_curve_v2.png 
+    - pytorch dataset visualisation/
+        - sample1_ecg_hp_0.5_filter.png # an ecg sample with high pass filter
+        - sample1_preprocessed_cwt.png # an ecg sample preprocessed to the time-frequency domain using a continuous wavelet transform
+- slurm/
+    - preprocessing_morlet_hp_znorm_4096.job # Batch job for preprocessing on Snellius
+    - train_model_balanced.job # Batch job for model training to be altered manually
+
 
 
 ---
