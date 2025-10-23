@@ -1,65 +1,133 @@
-# Python example code for the George B. Moody PhysioNet Challenge 2025
+# Detecting Chagas Disease from 12-Lead ECGs Using Deep Learning
 
-## What's in this repository?
+**Bachelor Thesis AI – University of Amsterdam**  
+**Author:** Dylan Nowee  
+**Date:** June 2025
 
-This repository contains a simple example that illustrates how to format a Python entry for the [George B. Moody PhysioNet Challenge 2025](https://physionetchallenges.org/2025/). If you are participating in the 2025 Challenge, then we recommend using this repository as a template for your entry. You can remove some of the code, reuse other code, and add new code to create your entry. You do not need to use the models, features, and/or libraries in this example for your entry. We encourage a diversity of approaches to the Challenges.
+This repository contains all code, documentation, and resources developed for my bachelor thesis on **automated detection of Chagas disease from 12-lead electrocardiograms (ECGs)** using **convolutional neural networks (CNNs)** and **wavelet-based preprocessing**.
 
-For this example, we implemented a random forest model with several simple features. (This simple example is **not** designed to perform well, so you should **not** use it as a baseline for your approach's performance.) You can try it by running the following commands on the Challenge training set. If you are using a relatively recent personal computer, then you should be able to run these commands from start to finish on a small subset (1000 records) of the training data in a few minutes or less.
+---
 
-## How do I run these scripts?
+## Overview
 
-First, you can download and create data for these scripts by following the [instructions](https://github.com/physionetchallenges/python-example-2025?tab=readme-ov-file#how-do-i-create-data-for-these-scripts) in the following section.
+Chagas disease is a parasitic infection that can cause chronic cardiac complications. Early detection from ECGs is challenging due to the subtle changes in ECG signals.  
+This research investigates how **deep learning architectures**, trained on **wavelet-transformed ECGs**, can improve diagnostic performance and interpretability.
 
-Second, you can install the dependencies for these scripts by creating a Docker image (see below) or [virtual environment](https://docs.python.org/3/library/venv.html) and running
+The project focused on:
+- Implementing a **preprocessing pipeline** for 12-lead ECGs
+- Applying a **Morlet continuous wavelet transform (CWT)** to represent ECGs in the time–frequency domain
+- Training and evaluating multiple **2D CNN** classifiers on balanced datasets derived from the **CODE-15%** source
+- Optimizing the workflow for execution on the **Snellius HPC** infrastructure
 
-    pip install -r requirements.txt
+---
 
-You can train your model by running
+## Repository Structure
+├── bachelor_thesis_dnowee.pdf # Final bachelor thesis document (uploaded soon...)
+├── README.md # Project documentation
+├── requirements.txt # Python dependencies
+├── data/ # data from https://zenodo.org/records/4916206 
+│ ├── chagas_class_balance.png # the balance of CODE-15 data visualised 
+│ ├── data_before_balancing.png # the balance of CODE-15 data visualised 
+├── code/
+│ ├── models/
+│ │ ├── 2d_cnn v1 (efficientnet based)/
+| | | └── team_code.py # code for creating, training and running 2d cnn v1
+│ │ └── 2d_cnn v2 (efficientnet l-based)/
+| |   └── team_code.py # code for creating, training and running 2d cnn v2
+│ ├── prepare_code15_data.py # Custom PyTorch dataset for CODE-15 ECGs
+│ ├── preprocess_code15_wavelets.py # Morlet wavelet transform & filtering pipeline
+| ├── train_model.py # functions for training the model for challenge
+| ├── run_model.py # functions for running the model for challenge
+| ├── evaluate_model_more_metrics.py # functions for evaluating the model
+| └── make_npy_array_calibration_preds.py # script for creating temporary GOTOs in working with limited space on snellius server
+| ├── calibrate_model.py # functions for calibrating the model
+| ├── helper_code.py # various helper functions defined for the challenge
+├── results/
+│ ├── pr_curve_v1.png
+│ ├── pr_curve_v2.png
+│ ├── roc_curve_v1.png
+│ ├── roc_curve_v2.png
+│ └── pytorch dataset visualisation/
+│ ├── sample1_ecg_hp_0.5_filter.png # an ecg sample with high pass filter
+│ └── sample1_preprocessed_cwt.png # an ecg sample preprocessed to the time-frequency domain using a continuous wavelet transform
+└── slurm/
+├── preprocessing_morlet_hp_znorm_4096.job # Batch job for preprocessing on Snellius
+└── train_model_balanced.job # Batch job for model training to be altered manually
 
-    python train_model.py -d training_data -m model
 
-where
+---
 
-- `training_data` (input; required) is a folder with the training data files, which must include the labels; and
-- `model` (output; required) is a folder for saving your model.
+## Preprocessing Pipeline
 
-You can run your trained model by running
+The **ECG preprocessing workflow** converts raw 12-lead signals into time–frequency representations suitable for CNN input.
 
-    python run_model.py -d holdout_data -m model -o holdout_outputs
+**Main steps:**
+1. **Signal Loading:**  
+   Read `.dat` / `.hea` files from the WFDB format using `wfdb.rdrecord()`.
+2. **High-Pass Filtering:**  
+   Remove baseline wander (cutoff = 0.5 Hz).
+3. **Z-score Normalization:**  
+   Normalize each lead independently to zero mean and unit variance.
+4. **Zero-Padding:**  
+   Pad signals to 4096 samples (≈10.2 seconds at 400 Hz).
+5. **Morlet Continuous Wavelet Transform:**  
+   Apply the complex Morlet CWT using `neuroDSP.timefrequency.wavelet_transform` with logarithmically spaced frequencies.
+6. **Power Spectrum Conversion:**  
+   Compute the magnitude squared of the wavelet coefficients to obtain a spectrogram-like 2D representation.
+7. **Stacking Leads:**  
+   Combine all 12-lead spectrograms into a multi-channel tensor for CNN input.
 
-where
+**Preprocessing output format:**  
+Each ECG sample → tensor of shape **[12, n_frequencies, n_timepoints]**
 
-- `holdout_data` (input; required) is a folder with the holdout data files, which will not necessarily include the labels;
-- `model` (input; required) is a folder for loading your model; and
-- `holdout_outputs` (output; required) is a folder for saving your model outputs.
+---
 
-The [Challenge website](https://physionetchallenges.org/2025/#data) provides a training database with a description of the contents and structure of the data files.
+## Model Overview
 
-You can evaluate your model by pulling or downloading the [evaluation code](https://github.com/physionetchallenges/evaluation-2025) and running
+A **2D Convolutional Neural Network (CNN)** was trained on wavelet spectrograms to classify ECGs as *Chagas-positive* or *Chagas-negative*.  
 
-    python evaluate_model.py -d holdout_data -o holdout_outputs -s scores.csv
+**Key design choices:**
+- 2D convolution layers with ReLU activations  
+- Batch normalization and dropout for stability  
+- Global average pooling before the final classification layer  
+- Binary cross-entropy loss with balanced class sampling
 
-where
+**Training details:**
+- Framework: PyTorch 2.7  
+- Optimizer: Adam (lr = 1e-4)  
+- Batch size: 16  
+- Epochs: 5  
+- Balanced dataset (50/50 positive vs. negative)  
 
-- `holdout_data`(input; required) is a folder with labels for the holdout data files, which must include the labels;
-- `holdout_outputs` (input; required) is a folder containing files with your model's outputs for the data; and
-- `scores.csv` (output; optional) is file with a collection of scores for your model.
+---
 
-You can use the provided training set for the `training_data` and `holdout_data` files, but we will use different datasets for the validation and test sets, and we will not provide the labels to your code.
+## Data Description
 
-## How do I create data for these scripts?
+- **CODE-15% Dataset** – 15% subset of the Brazilian CODE ECG collection  
+- **Sampling rate:** 400 Hz  
+- **Lead configuration:** Standard 12-lead ECG (I, II, III, aVR, aVL, aVF, V1–V6)
 
-You can use the scripts in this repository to convert the [CODE-15% dataset](https://zenodo.org/records/4916206), the [SaMi-Trop dataset](https://zenodo.org/records/4905618), and the [PTB-XL dataset](https://physionet.org/content/ptb-xl/) to [WFDB](https://wfdb.io/) format.
+*Raw CODE-15% dataset is publicly available at https://zenodo.org/records/4916206.*  
 
-Please see the [data](https://physionetchallenges.org/2025/#data) section of the website for more information about the Challenge data.
+---
 
-#### CODE-15% dataset
+## Running the Code
+
+### 1. Setup
+```bash
+git clone https://github.com/dylannow/dnowee_ECG_UvA
+cd dnowee_ECG_UvA
+pip install -r requirements.txt
+```
+---
+
+### 2. Creating data for these scripts
 
 These instructions use `code15_input` as the path for the input data files and `code15_output` for the output data files, but you can replace them with the absolute or relative paths for the files on your machine.
 
 1. Download and unzip one or more of the `exam_part` files and the `exams.csv` file in the [CODE-15% dataset](https://zenodo.org/records/4916206).
 
-2. Download and unzip the Chagas labels, i.e., the [`code15_chagas_labels.csv`](https://physionetchallenges.org/2025/data/code15_chagas_labels.zip) file.
+2. Download and unzip the Chagas labels, i.e., the [`code15_chagas_labels.csv`](https://physionetchallenges.org/2025/data/code15_chagas_labels.zip) file from the PhysioNet website.
 
 3. Convert the CODE-15% dataset to WFDB format, with the available demographics information and Chagas labels in the WFDB header file, by running
 
@@ -69,121 +137,41 @@ These instructions use `code15_input` as the path for the input data files and `
             -l code15_input/code15_chagas_labels.csv \
             -o code15_output/exams_part0 code15_output/exams_part1
 
-Each `exam_part` file in the [CODE-15% dataset](https://zenodo.org/records/4916206) contains approximately 20,000 ECG recordings. You can include more or fewer of these files to increase or decrease the number of ECG recordings, respectively. You may want to start with fewer ECG recordings to debug your code.
+Each `exam_part` file in the [CODE-15% dataset](https://zenodo.org/records/4916206) contains approximately 20,000 ECG recordings. You can include more or fewer of these files to increase or decrease the number of ECG recordings, respectively. 
 
-#### SaMi-Trop dataset
+*[Challenge website](https://physionetchallenges.org/2025/)* 
 
-These instructions use `samitrop_input` as the path for the input data files and `samitrop_output` for the output data files, but you can replace them with the absolute or relative paths for the files on your machine.
+--- 
+## HPC Execution (Snellius)
+Training and preprocessing were executed on the Snellius HPC cluster using SLURM batch scripts.
+Each array job allocated 8 CPU cores, 1 GPU, and 64 GB RAM per task.
+Preprocessing (wavelet transform) was CPU-based; CNN training ran on GPU.
 
-1. Download and unzip `exams.zip` file and the `exams.csv` file in the [SaMi-Trop dataset](https://zenodo.org/records/4905618).
+---
 
-2. Download and unzip the Chagas labels, i.e., the [`samitrop_chagas_labels.csv`](https://physionetchallenges.org/2025/data/samitrop_chagas_labels.zip) file.
+## Results
+Best Model: 2D CNN v1 
+Accuracy: 0.75
+AUC: 0.83
+recall: 0.74
 
-3. Convert the SaMi-Trop dataset to WFDB format, with the available demographics information and Chagas labels in the WFDB header file, by running
+Visualizations of example wavelet transforms and model statistics are available in `results/pytorch dataset visualisation`, `results/pr_curve_v1.png` and `results/roc_curve_v1.png`.
 
-        python prepare_samitrop_data.py \
-            -i samitrop_input/exams.hdf5 \
-            -d samitrop_input/exams.csv \
-            -l samitrop_input/samitrop_chagas_labels.csv \
-            -o samitrop_output
+---
 
-#### PTB-XL dataset
+## Thesis document
+The full thesis document will be uploaded in this repository under `bachelor_thesis_dnowee.pdf`.
 
-These instructions use `ptbxl_input` as the path for the input data files and `ptbxl_output` for the output data files, but you can replace them with the absolute or relative paths for the files on your machine. We are using the `records500` folder, which has a 500Hz sampling frequency, but you can also try the `records100` folder, which has a 100Hz sampling frequency.
+## Acknowledgements
+This work was conducted as part of the Bachelor of Science in Artificial Intelligence at the University of Amsterdam (UvA).
+Special thanks to Dr. Navchetan Awasthi for supervision and feedback, 
+and to PhysioNet for providing a base for the code and the opurtunity to work on this project.
 
-1. Download and, if necessary, unzip the [PTB-XL dataset](https://physionet.org/content/ptb-xl/).
+---
 
-2. Update the WFDB files with the available demographics information and Chagas labels  by running
+## Contact
+For questions or collaboration:
+Dylan Nowee
+dylan.nowee@gmail.com
 
-        python prepare_ptbxl_data.py \
-            -i ptbxl_input/records500/ \
-            -d ptbxl_input/ptbxl_database.csv \
-            -o ptbxl_output
-
-## Which scripts I can edit?
-
-Please edit the following script to add your code:
-
-* `team_code.py` is a script with functions for training and running your trained model.
-
-Please do **not** edit the following scripts. We will use the unedited versions of these scripts when running your code:
-
-* `train_model.py` is a script for training your model.
-* `run_model.py` is a script for running your trained model.
-* `helper_code.py` is a script with helper functions that we used for our code. You are welcome to use them in your code.
-
-These scripts must remain in the root path of your repository, but you can put other scripts and other files elsewhere in your repository.
-
-## How do I train, save, load, and run my model?
-
-To train and save your model, please edit the `train_model` function in the `team_code.py` script. Please do not edit the input or output arguments of this function.
-
-To load and run your trained model, please edit the `load_model` and `run_model` functions in the `team_code.py` script. Please do not edit the input or output arguments of these functions.
-
-## How do I run these scripts in Docker?
-
-Docker and similar platforms allow you to containerize and package your code with specific dependencies so that your code can be reliably run in other computational environments.
-
-To increase the likelihood that we can run your code, please [install](https://docs.docker.com/get-docker/) Docker, build a Docker image from your code, and run it on the training data. To quickly check your code for bugs, you may want to run it on a small subset of the training data, such as 1000 records.
-
-If you have trouble running your code, then please try the follow steps to run the example code.
-
-1. Create a folder `example` in your home directory with several subfolders.
-
-        user@computer:~$ cd ~/
-        user@computer:~$ mkdir example
-        user@computer:~$ cd example
-        user@computer:~/example$ mkdir training_data holdout_data model holdout_outputs
-
-2. Download the training data from the [Challenge website](https://physionetchallenges.org/2025/#data). Put some of the training data in `training_data` and `holdout_data`. You can use some of the training data to check your code (and you should perform cross-validation on the training data to evaluate your algorithm).
-
-3. Download or clone this repository in your terminal.
-
-        user@computer:~/example$ git clone https://github.com/physionetchallenges/python-example-2025.git
-
-4. Build a Docker image and run the example code in your terminal.
-
-        user@computer:~/example$ ls
-        holdout_data  holdout_outputs  model  python-example-2025  training_data
-
-        user@computer:~/example$ cd python-example-2025/
-
-        user@computer:~/example/python-example-2025$ docker build -t image .
-
-        Sending build context to Docker daemon  [...]kB
-        [...]
-        Successfully tagged image:latest
-
-        user@computer:~/example/python-example-2025$ docker run -it -v ~/example/model:/challenge/model -v ~/example/holdout_data:/challenge/holdout_data -v ~/example/holdout_outputs:/challenge/holdout_outputs -v ~/example/training_data:/challenge/training_data image bash
-
-        root@[...]:/challenge# ls
-            Dockerfile             holdout_outputs        run_model.py
-            evaluate_model.py      LICENSE                training_data
-            helper_code.py         README.md      
-            holdout_data           requirements.txt
-
-        root@[...]:/challenge# python train_model.py -d training_data -m model -v
-
-        root@[...]:/challenge# python run_model.py -d holdout_data -m model -o holdout_outputs -v
-
-        root@[...]:/challenge# python evaluate_model.py -d holdout_data -o holdout_outputs
-        [...]
-
-        root@[...]:/challenge# exit
-        Exit
-
-## What else do I need?
-
-This repository does not include code for evaluating your entry. Please see the [evaluation code repository](https://github.com/physionetchallenges/evaluation-2025) for code and instructions for evaluating your entry using the Challenge scoring metric.
-
-## How do I learn more? How do I share more?
-
-Please see the [Challenge website](https://physionetchallenges.org/2025/) for more details. Please post questions and concerns on the [Challenge discussion forum](https://groups.google.com/forum/#!forum/physionet-challenges). Please do not make pull requests, which may share information about your approach.
-
-## Useful links
-
-* [Challenge website](https://physionetchallenges.org/2025/)
-* [MATLAB example code](https://github.com/physionetchallenges/matlab-example-2025)
-* [Evaluation code](https://github.com/physionetchallenges/evaluation-2025)
-* [Frequently asked questions (FAQ) for this year's Challenge](https://physionetchallenges.org/2025/faq/)
-* [Frequently asked questions (FAQ) about the Challenges in general](https://physionetchallenges.org/faq/)
+---

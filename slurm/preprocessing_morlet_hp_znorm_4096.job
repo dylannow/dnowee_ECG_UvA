@@ -1,0 +1,24 @@
+#!/bin/bash
+#SBATCH --job-name=wavelet_preproc_1
+#SBATCH --output=logs/wavelet_preproc_1_%j.out
+#SBATCH --error=logs/wavelet_preproc_1_%j.err
+#SBATCH --time=10:00:00
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64G
+#SBATCH --partition=gpu_h100                # Use GPU partition
+#SBATCH --ntasks=1
+
+module purge
+module load 2023
+module load Python/3.11.3-GCCcore-12.3.0
+source ~/venv/bin/activate
+
+echo "Starting wavelet preprocessing..."
+
+python $HOME/code/preprocess_code15_wavelets.py \
+  --input_base $HOME/data/data_output/code15 \
+  --output_base /gpfs/scratch1/shared/dnowee/data \
+  --labels_dir $HOME/data
+
+echo "Finished wavelet preprocessing."
