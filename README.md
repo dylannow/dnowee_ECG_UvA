@@ -31,9 +31,9 @@ The project focused on:
 ├── code/ <br />
 │ ├── models/ <br />
 │ │ ├── 2d_cnn v1 (efficientnet based)/ <br />
-| | | └── team_code.py # code for creating, training and running 2d cnn v1 <br />
+| | |   └── team_code.py # code for creating, training and running 2d cnn v1 <br />
 │ │ └── 2d_cnn v2 (efficientnet l-based)/ <br />
-| |   └── team_code.py # code for creating, training and running 2d cnn v2 <br />
+| | |   └── team_code.py # code for creating, training and running 2d cnn v2 <br />
 │ ├── prepare_code15_data.py # Custom PyTorch dataset for CODE-15 ECGs <br />
 │ ├── preprocess_code15_wavelets.py # Morlet wavelet transform & filtering pipeline <br />
 | ├── train_model.py # functions for training the model for challenge <br />
