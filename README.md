@@ -31,9 +31,9 @@ The project focused on:
 ├── code/ <br />
 │ ├── models/ <br />
 │ │ ├── 2d_cnn v1 (efficientnet based)/ <br />
-| | |   └── team_code.py # code for creating, training and running 2d cnn v1 <br />
+| | | <tab>└── team_code.py # code for creating, training and running 2d cnn v1 <br />
 │ │ └── 2d_cnn v2 (efficientnet l-based)/ <br />
-| | |   └── team_code.py # code for creating, training and running 2d cnn v2 <br />
+| | | <tab>└── team_code.py # code for creating, training and running 2d cnn v2 <br />
 │ ├── prepare_code15_data.py # Custom PyTorch dataset for CODE-15 ECGs <br />
 │ ├── preprocess_code15_wavelets.py # Morlet wavelet transform & filtering pipeline <br />
 | ├── train_model.py # functions for training the model for challenge <br />
@@ -51,8 +51,8 @@ The project focused on:
 │ ├── sample1_ecg_hp_0.5_filter.png # an ecg sample with high pass filter <br />
 │ └── sample1_preprocessed_cwt.png # an ecg sample preprocessed to the time-frequency domain using a continuous wavelet transform <br />
 └── slurm/ <br />
-├── preprocessing_morlet_hp_znorm_4096.job # Batch job for preprocessing on Snellius <br />
-└── train_model_balanced.job # Batch job for model training to be altered manually <br />
+<tab> ├── preprocessing_morlet_hp_znorm_4096.job # Batch job for preprocessing on Snellius <br />
+<tab> └── train_model_balanced.job # Batch job for model training to be altered manually <br />
 
 
 ---
